@@ -1,0 +1,42 @@
+Symbol,Name,volume (shares/day),net assets (million USD),esg,fund type,fund category,specification,location,for_data,expense ratio
+VCEB,Vanguard ESG U.S. Corporate Bond ETF,12129,112.4,TRUE,bonds,corporate,,US,TRUE,0.12
+BGRN,,24621,156.5,TRUE,bonds,sector,,global,TRUE,0.2
+FAN,wind energy,354061,469,TRUE,stocks,sector,wind,global,TRUE,0.61
+PZD,cleantech,25558,504.7,TRUE,stocks,sector,cleantech,global,TRUE,0.65
+NULG,,243485,562.6,TRUE,stocks,large cap,growth,US,TRUE,0.35
+SPYX,,37508,893.4,TRUE,stocks,large cap,blend,US,TRUE,0.2
+EAGG,,100651,739.9,TRUE,bonds,broad base,,US,TRUE,0.1
+ACES,ALPSClean Energy ETF,124463,1070,TRUE,stocks,sector,clean energy,US,TRUE,0.55
+PHO,,76675,1340,TRUE,stocks,sector,water,US,TRUE,0.6
+VSGX,,106813,1620,TRUE,stocks,large cap,,international,TRUE,0.15
+DSI,,173725,2630,TRUE,stocks,broad base,,US,TRUE,0.25
+LIT,Global X Lithium ETF,1536005,1980,TRUE,stocks,sector,lithium,global,TRUE,0.75
+SUSL,,11236,2930,TRUE,stocks,large cap,blend,US,TRUE,0.1
+ESGV,,235413,3180,TRUE,stocks,broad,,US,TRUE,0.12
+PBW,,993748,3060,TRUE,stocks,sector,energy,global,TRUE,0.7
+TAN,,2083444,3630,TRUE,stocks,sector,solar,global,TRUE,0.69
+ICLN,,6861635,4690,TRUE,stocks,sector,clean energy,global,TRUE,0.46
+ESGE,,938444,6830,TRUE,stocks,,,emerging markets,TRUE,0.25
+IBB,iShares Nasdaq Biotechnology ETF,2216692,10370,TRUE,stocks,sector,biotech,US,TRUE,0.46
+ESGU,,546041,13030,TRUE,stocks,broad base,,US,TRUE,0.15
+SPCX,SPAC etfs,338704,117.8,,stocks,sector,SPACs,US,TRUE,0.95
+DRIV,autonomous and electric vehicles,629686,761.1,,stocks,sector,EV,,TRUE,0.68
+VAW,vanguard materials,94896,3160,,stocks,sector,natural resources,,TRUE,0.1
+SCHH,,424384,4630,,real estate,,,US,TRUE,0.07
+VDE,vanguard energy,474455,4370,,stocks,sector,energy,,TRUE,0.1
+VNQI,,194126,5610,,real estate,,,international,TRUE,0.12
+VPU,vanguard utilities,162557,5670,,stocks,sector,utilities,,TRUE,0.1
+SCHM,,245335,8060,,stocks,mid cap,,US,TRUE,0.04
+VMBS,Vanguard Mortgage-Backed Securities ETF,1162344,15120,,bonds,government,,,TRUE,0.05
+SCHA,Schwab U.S. Small-Cap ETF,456750,12910,,stocks,small cap,,US,TRUE,0.04
+VBK,Vanguard Small Cap Growth ETF,158307,35400,,stocks,small cap,growth,,TRUE,0.07
+VNQ,Vanguard Real Estate Index Fund,4214213,61430,,real estate,,,US,TRUE,0.12
+IJH,iShares Core S&P Mid-Cap ETF,1169750,53770,,stocks,mid cap,,US,TRUE,0.05
+IJR,iShares Core S&P Small-Cap ETF,2629224,56110,,stocks,small cap,,US,TRUE,0.06
+GLD,SPDR Gold Trust,8342125,71600,,commodity,sector,gold,global,TRUE,0.4
+VUG,Vanguard Growth ETF,860947,143370,,stocks,,growth,US,TRUE,0.04
+BND,Vanguard Total Bond Market ETF,4011073,305350,,bonds,broad base,,US,TRUE,0.03
+VWO,Vanguard FTSE Emerging Markets ETF,7244119,105230,,stocks,,,emerging markets,TRUE,0.1
+VEA,Vanguard FTSE Developed Markets ETF,7357377,137780,,stocks,,,international,TRUE,0.05
+VTI,Vanguard Total Stock Market ETF,4985371,1080000,,stocks,broad base,,US,TRUE,0.03
+SPY,SPDR S&P 500 ETF,82264583,316460,,stocks,large cap,,US,TRUE,0.09
