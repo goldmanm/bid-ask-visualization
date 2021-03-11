@@ -1,35 +1,29 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-This script saves bid and ask data for specified ETFs to files for each day
-during market open hours.
-
-It assumes the computer is at US East Coast Time.
-
-@author: mark
-"""
 
 import os
-import sys
 import re
 
 import pandas as pd
-import numpy as np
 
-from itertools import product
-
-from datetime import datetime
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-colors = sns.color_palette('colorblind')
-
-from bokeh.plotting import figure
-from bokeh.models.tools import HoverTool
-from bokeh.models import NumeralTickFormatter, DatetimeTickFormatter, Rect, ColumnDataSource
-from bokeh.models.annotations import BoxAnnotation, Label
 
 def get_date_etf_list_from_data(directory='data'):
+    """
+    Returns list of dates and etfs based on files in the given directory
+
+    Parameters
+    ----------
+    directory : str, optional
+        Directory where CSV files are stored. The default is 'data'.
+
+    Returns
+    -------
+    dates : list of str
+        Strings of dates found in files. Format YYYY-MM-DD.
+    etfs : list of str
+        Strings of ETF ticker symbols.
+
+    """
     files = os.listdir(directory)
     files = [f.split('.csv')[0] for f in files if '.csv' in f]
     dates = set()
@@ -44,14 +38,14 @@ def get_date_etf_list_from_data(directory='data'):
 
 def create_and_save_quoated_spread_data(directory='data', sample_frequency=60, ignore_errors=1):
     """
-    
+    Convert quoted spreads from various CSV files of various days' and ETFs' data to one data frame.
 
     Parameters
     ----------
-    directory : TYPE, optional
-        DESCRIPTION. The default is 'data'.
-    sample_frequency : TYPE, optional
-        DESCRIPTION. The default is 60.
+    directory : str, optional
+        Folder containing data to be read. The default is 'data'.
+    sample_frequency : int, optional
+        Number of seconds of each data lump. The default is 60.
     ignore_errors : int, optional
         Level of ignoring errors in file reading:
             0 = raise exceptions
@@ -60,12 +54,9 @@ def create_and_save_quoated_spread_data(directory='data', sample_frequency=60, i
 
     Returns
     -------
-    bids : TYPE
-        DESCRIPTION.
-    asks : TYPE
-        DESCRIPTION.
-    quoted_spread : TYPE
-        DESCRIPTION.
+    quoted_spread : pd.DataFrame
+        If an exeption occurs, returns data frame of quoted spread data. If no
+        exception, returns None.
 
     """
     dates, etfs = get_date_etf_list_from_data(directory)
@@ -84,25 +75,16 @@ def create_and_save_quoated_spread_data(directory='data', sample_frequency=60, i
                     pass
                 else:
                     raise AttributeError("ignore_errors must be 0, 1, 2. Given {}".format(ignore_errors))
-            #bids[(date, etf)] = df.bid
-            #asks[(date, etf)] = df.ask
             quoted_spread[(date, etf)] = df['relative spread']
         if index%10 == 0:
             print('finished {}/{} dates'.format(index, len(dates)))
     try:
         basetime =  pd.to_datetime('2021-01-01') + pd.Timedelta(hours=9, minutes=30)
         timedeltas = pd.TimedeltaIndex([pd.Timedelta(seconds=x) for x in quoted_spread.index])
-        #bids.index = basetime + timedeltas
-        #asks.index = basetime + timedeltas
         quoted_spread.index = basetime + timedeltas
         if sample_frequency is not None:
             resample_str = '{}s'.format(sample_frequency)
-            #bids = bids.resample(resample_str).mean()
-            #asks = asks.resample(resample_str).mean()
             quoted_spread = quoted_spread.resample(resample_str).mean()
-            # move to midpoint
-            #bids.index = bids.index + pd.Timedelta(seconds = sample_frequency / 2)
-            #asks.index = asks.index + pd.Timedelta(seconds = sample_frequency / 2)
             quoted_spread.index = quoted_spread.index + pd.Timedelta(seconds = sample_frequency / 2)
         quoted_spread.to_pickle(os.path.join(directory, 'quoted_spread.pkl'))
         quoted_spread.to_csv(os.path.join(directory, 'quoted_spread.csv.zip'))

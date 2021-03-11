@@ -10,111 +10,41 @@ It assumes the computer is at US East Coast Time.
 """
 
 import os
-import sys
-import re
 
 import pandas as pd
 import numpy as np
 
 from itertools import product
 
-from datetime import datetime
-
 import streamlit as st
-import matplotlib.pyplot as plt
-import seaborn as sns
-colors = sns.color_palette('colorblind')
 
 from bokeh.plotting import figure
 from bokeh.models.tools import HoverTool
 from bokeh.models import NumeralTickFormatter, DatetimeTickFormatter, Rect, ColumnDataSource, VBar, LabelSet
-from bokeh.models.annotations import BoxAnnotation, Label
 
-from streamlit_metrics import metric, metric_row
-
-@st.cache
-def get_date_etf_list_from_data(directory='data'):
-    files = os.listdir(directory)
-    files = [f.split('.csv')[0] for f in files if '.csv' in f]
-    dates = set()
-    etfs = set()
-    ba_data_name = re.compile('[0-9]{4}\-[0-9]{2}\-[0-9]{2}_[A-Z]{2,6}')
-    for f in files:
-        if ba_data_name.match(f):
-            date, etf = f.split('_')
-            dates.add(date)
-            etfs.add(etf)
-    return dates, etfs
-
-# #@st.cache
-# def load_bid_ask_data(directory='data', sample_frequency=60, ignore_errors=1):
-#     """
-    
-
-#     Parameters
-#     ----------
-#     directory : TYPE, optional
-#         DESCRIPTION. The default is 'data'.
-#     sample_frequency : TYPE, optional
-#         DESCRIPTION. The default is 60.
-#     ignore_errors : int, optional
-#         Level of ignoring errors in file reading:
-#             0 = raise exceptions
-#             1 = catch and print unavailable files
-#             2 = catch and pass
-
-#     Returns
-#     -------
-#     bids : TYPE
-#         DESCRIPTION.
-#     asks : TYPE
-#         DESCRIPTION.
-#     quoted_spread : TYPE
-#         DESCRIPTION.
-
-#     """
-#     dates, etfs = get_date_etf_list_from_data(directory)
-#     mi = pd.MultiIndex.from_product([dates, etfs], names=['dates','etf'])
-#     bids = pd.DataFrame(columns=mi)
-#     asks = pd.DataFrame(columns=mi)
-#     quoted_spread = pd.DataFrame(columns=mi)
-#     for date in dates:
-#         for etf in etfs:
-#             try:
-#                 df = pd.read_csv(os.path.join(directory, '{}_{}.csv'.format(date, etf)), index_col=0)
-#             except FileNotFoundError as e:
-#                 if ignore_errors == 0:
-#                     raise e
-#                 elif ignore_errors == 1:
-#                     print("Failed to find file for {} on {}".format(etf, date))
-#                 elif ignore_errors == 2:
-#                     pass
-#                 else:
-#                     raise AttributeError("ignore_errors must be 0, 1, 2. Given {}".format(ignore_errors))
-#             #bids[(date, etf)] = df.bid
-#             #asks[(date, etf)] = df.ask
-#             quoted_spread[(date, etf)] = df['relative spread']
-#     basetime =  pd.to_datetime('2021-01-01') + pd.Timedelta(hours=9, minutes=30)
-#     timedeltas = pd.TimedeltaIndex([pd.Timedelta(seconds=x) for x in bids.index])
-#     #bids.index = basetime + timedeltas
-#     #asks.index = basetime + timedeltas
-#     quoted_spread.index = basetime + timedeltas
-#     if sample_frequency is not None:
-#         resample_str = '{}s'.format(sample_frequency)
-#         #bids = bids.resample(resample_str).mean()
-#         #asks = asks.resample(resample_str).mean()
-#         quoted_spread = quoted_spread.resample(resample_str).mean()
-#         # move to midpoint
-#         #bids.index = bids.index + pd.Timedelta(seconds = sample_frequency / 2)
-#         #asks.index = asks.index + pd.Timedelta(seconds = sample_frequency / 2)
-#         quoted_spread.index = quoted_spread.index + pd.Timedelta(seconds = sample_frequency / 2)
-#     return bids, asks, quoted_spread
-
-@st.cache
-def load_etf_info(directory='data'):
-    return pd.read_csv(os.path.join(directory,'etf_info.csv', index_col='Symbol'))
+from streamlit_metrics import metric_row
 
 def display_method_to_choose_etfs(selected_method_choose_dates, all_etfs, etf_data, sl_obj):
+    """
+    Generates various streamlit options for selecting which ETFs to display.
+
+    Parameters
+    ----------
+    selected_method_choose_dates : list of str
+        Strings of the various methods of selecting ETFs.
+    all_etfs : list of str
+        List of all ETF tickers.
+    etf_data : pd.DataFrame
+        Dataframe containing bulk data about ETFs.
+    sl_obj : streamlit
+        Stremlit object to place the elements.
+
+    Returns
+    -------
+    selected_etfs : list of str
+        List of str tickers chosen by users.
+
+    """
     selected_etfs = all_etfs
     if 'By volume traded' in selected_method_choose_dates:
         selection_data = etf_data['volume (shares/day)']
@@ -128,7 +58,6 @@ def display_method_to_choose_etfs(selected_method_choose_dates, all_etfs, etf_da
                          format='10^%.1f'
                          )
         selected = (selection_data >= 10**min_vol) & (selection_data <= 10**max_vol)
-        #st.write('{} ETFs selected'.format(selected.sum()))
         selected_etfs = list(set(selected_etfs) & set(selection_data[selected].index))
     if 'By market cap' in selected_method_choose_dates:
         selection_data = etf_data['net assets (million USD)']
@@ -142,21 +71,57 @@ def display_method_to_choose_etfs(selected_method_choose_dates, all_etfs, etf_da
                          format='10^%.1f'
                          )
         selected = (selection_data >= 10**min_vol) & (selection_data <= 10**max_vol)
-        #st.write('{} ETFs selected'.format(selected.sum()))
         selected_etfs = list(set(selected_etfs) & set(selection_data[selected].index))
     if 'Only ESG ETFs' in selected_method_choose_dates:
         esg_etfs = etf_data[etf_data['esg'] == True].index
         selected_etfs = list(set(selected_etfs) & set(esg_etfs))
     if 'choose specific ETFs' in selected_method_choose_dates:
-        selected_etfs = sl_obj.multiselect('Which ETFs do you want to look at', list(selected_etfs), list(selected_etfs))
+        selected_etfs = sl_obj.multiselect('Which ETFs do you want to look at', list(selected_etfs), ['ESGV','VTI','BND', 'VCEB', 'VSGX'])
     return selected_etfs
 
 def get_averages(data, selected_dates, selected_etfs):
+    """
+    Obtain average values of various ETFs across the trading day.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        data of various days and ETFs.
+    selected_dates : list of str
+        list of dates in format YYYY-MM-DD.
+    selected_etfs : list of str
+        list of ETF tickers.
+
+    Returns
+    -------
+    pd.Series
+        Data frame of average values in ETFs at various times during tradiing day.
+
+    """
     potential_columns = product(selected_dates, selected_etfs)
     actual_columns = [x for x in potential_columns if x in data.columns]
     return data[actual_columns].T.groupby(level=['etf']).mean().T
 
 def add_trade_windows(p, t_new, t_old, ymax):
+    """
+    Add trade windows to plot
+
+    Parameters
+    ----------
+    p : Bokeh figure
+        Figure to add trading windows to.
+    t_new : tuple of timestamps
+        Starting and ending timestamp of the old trading window.
+    t_old : tuple of timestamps
+        Starting and ending timestamp of the new trading window.
+    ymax : float
+        Maxs value to extend trading windows.
+
+    Returns
+    -------
+    None.
+
+    """
     source = ColumnDataSource(dict(x=[t_old[0]+0.5*(t_old[1]-t_old[0]),t_new[0]+0.5*(t_new[1]-t_new[0])],
                           y=[ymax-0.0002, ymax-0.0002 ],
                           w=[t_old[1]-t_old[0], t_new[1]-t_new[0]],
@@ -175,6 +140,21 @@ def add_trade_windows(p, t_new, t_old, ymax):
     p.add_tools(HoverTool(tooltips=tooltips, renderers=[box_rend]))
 
 def format_plots(p, ymax=None):
+    """
+    Format bokeh plots for quoted spreads across market times
+
+    Parameters
+    ----------
+    p : Bokeh figure plot
+        Bokeh plot object to format
+    ymax : TYPE, optional
+        Max yaxis value. The default is None.
+
+    Returns
+    -------
+    None
+
+    """
     if ymax is None:
         num_formatter='0.00%'
     else:
@@ -189,6 +169,28 @@ def format_plots(p, ymax=None):
     p.toolbar.autohide = True
     
 def make_multi_etf_plot(selected_etfs, selected_dates, t_new, t_old, quoted_spread):
+    """
+    Make plot with multiple ETF averages
+
+    Parameters
+    ----------
+    selected_etfs : list of str
+        List of ETF tickers
+    selected_dates : list of str
+        List of dates to obtain averages of. In format YYYY-MM-DD.
+    t_new : tuple of timestamps
+        Starting and ending timestamp of the old trading window.
+    t_old : tuple of timestamps
+        Starting and ending timestamp of the new trading window.
+    quoted_spread : pd.DataFrame
+        Quoted spread data for various times, days, and ETFs.
+
+    Returns
+    -------
+    p : Bokeh figure
+        Plot of multiple ETF averages.
+
+    """
     t_all = t_new + t_old
     average_data = get_averages(quoted_spread, selected_dates, selected_etfs)
 
@@ -220,6 +222,30 @@ def make_multi_etf_plot(selected_etfs, selected_dates, t_new, t_old, quoted_spre
     return p
 
 def make_single_etf_plot(selected_etf, selected_dates, t_new, t_old, quoted_spread, supress_hover_after= 10000):
+    """
+    Plots data for a single ETF for multiple days.
+
+    Parameters
+    ----------
+    selected_etfs : list of str
+        List of ETF tickers
+    selected_dates : list of str
+        List of dates to plot. In format YYYY-MM-DD.
+    t_new : tuple of timestamps
+        Starting and ending timestamp of the old trading window.
+    t_old : tuple of timestamps
+        Starting and ending timestamp of the new trading window.
+    quoted_spread : pd.DataFrame
+        Quoted spread data for various times, days, and ETFs.
+    supress_hover_after : int, optional
+        Do not show hover functionality if there are more than this number of days. The default is 10000.
+
+    Returns
+    -------
+
+    p : Bokeh figure
+        Plot of single ETF over various days.
+    """
     t_all = t_new + t_old
     average_data = get_averages(quoted_spread, selected_dates, [selected_etf])
 
@@ -262,6 +288,28 @@ def make_single_etf_plot(selected_etf, selected_dates, t_new, t_old, quoted_spre
     return p
  
 def make_bid_ask_plot(selected_etf, selected_date, t_new, t_old, directory):
+    """
+    Plots bid and ask prices over one trading day for one ETF.
+
+    Parameters
+    ----------
+    selected_etf : str
+        ETF ticker of data to show.
+    selected_date : str
+        Date of data to show. In format YYYY-MM-DD.
+    t_new : tuple of timestamps
+        Starting and ending timestamp of the old trading window.
+    t_old : tuple of timestamps
+        Starting and ending timestamp of the new trading window.
+    directory : str
+        Folder containing ETF bid and ask price data. File must be in format date_etf.csv.
+
+    Returns
+    -------
+    p : Bokeh figure
+        Plot of bid and ask prices.
+
+    """
     data = pd.read_csv(os.path.join(directory, '{}_{}.csv'.format(selected_date, selected_etf)), index_col=0)
     basetime =  pd.to_datetime('2021-01-01') + pd.Timedelta(hours=9, minutes=30)
     timedeltas = pd.TimedeltaIndex([pd.Timedelta(seconds=x) for x in data.index])
@@ -297,7 +345,20 @@ def make_bid_ask_plot(selected_etf, selected_date, t_new, t_old, directory):
     return p
 
 def make_relative_fee_amount(selected_ratios):
-    
+    """
+    Generate a bar plot for the ratio of quoted spread to expense ratio.
+
+    Parameters
+    ----------
+    selected_ratios : pd.Series
+        Data of ratio of quoted spread to expense ratio.
+
+    Returns
+    -------
+    p : Bokeh figure
+        Produced plot.
+
+    """
     p = figure(plot_width=400, plot_height=400, 
                x_axis_label="ETFs", x_minor_ticks=len(selected_ratios),
                toolbar_location='below', title='Ratio of quoted spread to expense ratio')
@@ -311,7 +372,6 @@ def make_relative_fee_amount(selected_ratios):
     rend = p.add_glyph(source, glyph)
     rend.hover_glyph = glyph_hover
     labels = LabelSet(x='x', level='glyph', source=source, render_mode='canvas')
-    #p.add_layout(labels)
     tooltips = [('etf','@desc'),
                 ('ratio','@top')]
 
@@ -326,16 +386,57 @@ def make_relative_fee_amount(selected_ratios):
     p.xaxis.bounds = (-.5,len(selected_ratios)-.5)
     p.xaxis.ticker = list(range(len(selected_ratios)))
     p.xaxis.major_label_overrides = dict(zip(range(len(selected_ratios)), list(selected_ratios.index)))
-    #p.xaxis.major_label_overrides = {1: 'A', 2: 'B', 3: 'C'}
     p.xaxis.major_label_orientation = 3.14/2
     return p
+
 def get_quoted_spread_change(selected_etfs, selected_dates, t_old, t_new, quoted_spread):
+    """
+    Get the relative change in average quoted spread between the two time windows.
+
+    Parameters
+    ----------
+    selected_etfs : list of str
+        List of ETF tickers
+    selected_dates : list of str
+        List of dates to obtain averages of. In format YYYY-MM-DD.
+    t_new : tuple of timestamps
+        Starting and ending timestamp of the old trading window.
+    t_old : tuple of timestamps
+        Starting and ending timestamp of the new trading window.
+    quoted_spread : pd.DataFrame
+        Quoted spread data for various times, days, and ETFs.
+
+    Returns
+    -------
+    pd.Series
+        The relative change in average quoted spread between the two time windows.
+
+    """
     df = get_averages(quoted_spread, selected_dates, selected_etfs)
     old_quotes = df[(df.index > t_old[0]) & (df.index < t_old[1])].mean(0)
     new_quotes = df[(df.index > t_new[0]) & (df.index < t_new[1])].mean(0)
     return (new_quotes / old_quotes).sort_values(ascending=False)
 
 def create_metrics(fractional_increase, nwide=4, container=st, max_rows=2):
+    """
+    Print information about fractional change in quoted spreads in metric form
+
+    Parameters
+    ----------
+    fractional_increase : pd.Series
+        Data of the increase in fees between two windows.
+    nwide : int, optional
+        Number of metrics to print side-by-side. The default is 4.
+    container : streamlit object, optional
+        Object to display metrics. The default is st.
+    max_rows : int, optional
+        Max number of rows to present data for. The default is 2.
+
+    Returns
+    -------
+    None.
+
+    """
     metrics = {}
     rows = 0
     for etf, val in dict(fractional_increase).items():
@@ -361,8 +462,6 @@ results = st.beta_expander("Results")
 conclusion = st.beta_expander("Conclusion")
 methods = st.beta_expander("Methods")
 disclaimer = st.beta_expander("Disclaimer")
-
-all_dates, all_etfs = get_date_etf_list_from_data()
 
 quoted_spread = pd.read_pickle('data/quoted_spread.pkl')
 
