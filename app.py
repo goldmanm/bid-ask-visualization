@@ -479,7 +479,7 @@ etf_data = etf_data[etf_data['for_data'] == True]
 start, end = data_selection.select_slider('Dates to analyze', all_dates, (all_dates[0], all_dates[-1]))
 selected_dates = all_dates[all_dates.index(start):all_dates.index(end)]
 method_choose_etfs = data_selection.multiselect('Methods for selecting ETFs',
-                                    ['By volume traded', 'By market cap', 'Only ESG ETFs', 'choose specific ETFs'], [])
+                                    ['By volume traded', 'By market cap', 'Only ESG ETFs', 'choose specific ETFs'], ['choose specific ETFs'])
 
 selected_etfs = display_method_to_choose_etfs(method_choose_etfs, all_etfs,etf_data,sl_obj=data_selection)
 
