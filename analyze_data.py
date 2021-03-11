@@ -86,7 +86,10 @@ def create_and_save_quoated_spread_data(directory='data', sample_frequency=60, i
             resample_str = '{}s'.format(sample_frequency)
             quoted_spread = quoted_spread.resample(resample_str).mean()
             quoted_spread.index = quoted_spread.index + pd.Timedelta(seconds = sample_frequency / 2)
-        quoted_spread.to_pickle(os.path.join(directory, 'quoted_spread.pkl'))
+        quoted_spread.to_pickle(os.path.join(directory, 'quoted_spread.pkl'), protocol=4)
         quoted_spread.to_csv(os.path.join(directory, 'quoted_spread.csv.zip'))
     except:
         return quoted_spread
+
+if __name__ == '__main__':
+    create_and_save_quoated_spread_data()
