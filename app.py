@@ -250,7 +250,7 @@ def make_single_etf_plot(selected_etf, selected_dates, t_new, t_old, quoted_spre
     average_data = get_averages(quoted_spread, selected_dates, [selected_etf])
 
     p = figure(plot_width=400, plot_height=400, x_axis_type="datetime",
-               toolbar_location='below', title='quoted Bid-Ask Spread for {}'.format(selected_etf),
+               toolbar_location='below', title='Quoted spread for {}'.format(selected_etf),
                x_range=(pd.Timestamp('2021-01-01 9:30'), max(t_all)+pd.Timedelta(hours=1.5)),
                y_range=(0, average_data.max().max()+0.0001))
     add_trade_windows(p, t_new, t_old, average_data.max().max())
@@ -318,7 +318,7 @@ def make_bid_ask_plot(selected_etf, selected_date, t_new, t_old, directory):
     bid = data.bid
     ask = data.ask
     p = figure(plot_width=400, plot_height=400, x_axis_type="datetime",
-               toolbar_location='below', title='Bid & Ask Prices for {} on {}'.format(selected_etf, selected_date),
+               toolbar_location='below', title='Bid & ask prices for {} on {}'.format(selected_etf, selected_date),
                x_range=(pd.Timestamp('2021-01-01 9:30'), max(t_all)+pd.Timedelta(hours=1.5)),
                y_range=(min(bid.min(),ask.min())-0.2, max(bid.max(),ask.max())+0.2))
     add_trade_windows(p, t_new, t_old, max(bid.max(),ask.max()))
@@ -344,7 +344,7 @@ def make_bid_ask_plot(selected_etf, selected_date, t_new, t_old, directory):
     p.yaxis.formatter = NumeralTickFormatter(format="$0.00")    
     return p
 
-def make_relative_fee_amount(selected_ratios):
+def make_relative_fee_amount(selected_ratios, t_new_text = ''):
     """
     Generate a bar plot for the ratio of quoted spread to expense ratio.
 
@@ -352,7 +352,8 @@ def make_relative_fee_amount(selected_ratios):
     ----------
     selected_ratios : pd.Series
         Data of ratio of quoted spread to expense ratio.
-
+    t_new_text : str
+        Time range to place in title of plot.
     Returns
     -------
     p : Bokeh figure
@@ -361,7 +362,7 @@ def make_relative_fee_amount(selected_ratios):
     """
     p = figure(plot_width=400, plot_height=400, 
                x_axis_label="ETFs", x_minor_ticks=len(selected_ratios),
-               toolbar_location='below', title='Ratio of quoted spread to expense ratio')
+               toolbar_location='below', title='Ratio of quoted spread to expense ratio {}'.format(t_new_text))
     source = ColumnDataSource(dict(x=range(len(selected_ratios)),
                           top=selected_ratios.values,
                           desc=selected_ratios.index,))
@@ -521,54 +522,49 @@ results.write("""This spread is not the only fee that ETF investors might face. 
 
 df = get_averages(quoted_spread, selected_dates, selected_etfs)
 new_quotes = df[(df.index > t_new[0]) & (df.index < t_new[1])].mean(0)
+t_new_text = '{}:{}-{}:{}'.format(t_new[0].hour, t_new[0].minute,t_new[1].hour, t_new[1].minute)
 ratio = (new_quotes / (etf_data.loc[selected_etfs,'expense ratio']/100)).sort_values(ascending=False)
-results.bokeh_chart(make_relative_fee_amount(ratio))
+results.bokeh_chart(make_relative_fee_amount(ratio,t_new_text))
 
 results.write("""To put this ratio in perspective, a ratio of 100% in the plot above indicates that if:
               
-1. you were to buy and one year later sell that ETF with this bid ask spread,
+1. you were to buy and one year later sell that ETF with this bid-ask spread,
 2. the market maker doesn't give a significant reduction in bid-ask spread, and
 3. the real value of the fund is halfway between the bid and ask price
               
-then the cost you lost due to the bid-ask spread is approximately equal to the expense
+then the cost due to the bid-ask spread is approximately equal to the expense
 ratio that you paid to the fund.
 """)
 
 def write_intro():
     
     intro.write("""     
-    One convoluted investment cost that investors may overlook is the [bid-ask spread](https://en.wikipedia.org/wiki/Bid%E2%80%93ask_spread),
-    which is the difference between the stated selling and buying price. When executing trades, your broker will send
+    One investment cost that investors may overlook is the [bid-ask spread](https://en.wikipedia.org/wiki/Bid%E2%80%93ask_spread),
+    which is the difference between the selling and buying price for a stock. When executing trades, your broker will send
     your order to a [market maker](https://en.wikipedia.org/wiki/Market_maker), which makes money by giving the seller less money 
-    than they take from the buyer and keeping the difference. 
-    Fortunately, U.S. [regulations](https://www.schwab.com/execution-quality/price-improvement) 
-    prevent this difference from being greater than the bid-ask spread, and it can sometimes be smaller.
+    than they take from the buyer and keeping the difference (known as the effective spread). 
+    U.S. [regulations](https://www.schwab.com/execution-quality/price-improvement) 
+    prevent this difference from being greater than the bid-ask spread listed on the exchange (known as the quoted spread).
 
     The higher the bid-ask spread, the higher the cut the market maker may take.
-    Market makers often pass part of the cut back to the brokerage that sent them your trades.
+    Market makers often pass part of the cut back to the brokerage that sent them your trades (known as payment for order flow).
     While this incentivizes brokers to send trades to places that give them a larger cut, they
     are also regulated to ensure the [best execution](https://www.finra.org/rules-guidance/guidance/reports/2019-report-exam-findings-and-observations/best-execution)
     of trades for investors when deciding which market maker
     to send trades to.
 
-    From a broker's perspective, this is not small money either.
-    CFRA analyst Pauline Bell [estimates](https://www.barrons.com/articles/after-the-gamestop-frenzy-robinhood-faces-a-new-set-of-risks-51612573317?mod=hp_minor_pos17)
-    80% of Robinhood's revenue comes from payment from market makers.
-                
-    So what determines the bid-ask spread? Less frequently traded equities typically have higher 
-    bid-ask spreads. Periods of time that are [more volatile](https://www.investopedia.com/ask/answers/06/bidaskspread.asp) can also leads to a wider gap. 
-        
-    Since one period of higher volatility is market open, I wondered about 
-    a policy change at M1 finance, a company that offers automatic rebalancing using set trade times.
-    On July 1 2020, M1 Finance shifted their morning trading window from starting at 10:00 am to starting at 9:30 am. 
+    From a broker's perspective, this can be a significant revenue source.
+    Barrons recently cited a CFRA analyst that [estimated](https://www.barrons.com/articles/after-the-gamestop-frenzy-robinhood-faces-a-new-set-of-risks-51612573317?mod=hp_minor_pos17)
+    80% of Robinhood's revenue came from payment for order flow.
+
+    Since [volatility](https://www.investopedia.com/ask/answers/06/bidaskspread.asp) increases bid-ask spread and one period of higher volatility is when a market opens, I wondered how much buying at the start of the trading day influences this cost. This is quite relevant for investors using [M1 Finance LLC](https://www.m1finance.com/), a company that offers automatic rebalancing but restricts users to set trade times.
+    On July 1 2020, M1 shifted their morning trading window from starting at 10:00 am to the market opening time of 9:30 am. 
     The reasons behind this, according to [M1 press release](https://www.m1finance.com/blog/trade-window-change/)
     was to enable customers to invest when market volume is high, when the prices are similar to overnight
-    prices, because many customers have asked for it, and because they can.
+    prices, because customers have asked for it, and because they can.
+    What was not mentioned in the press release was how the timing change will affect costs of trading.
 
-    What was not mentioned in the press release was how the timing change will affect 
-    the Bid-Ask spread, but is this even significant?
-
-    Below is one example of the bid-ask spread, where you can see the higher gap during
+    I wanted to understand how much the bid-ask spread changes over the course of the day and if that even was significant to investors using M1. Below is one example showing quoted bid and ask prices, where you can see the higher gap during
     the start of trading.
     """)
     
@@ -576,27 +572,19 @@ def write_intro():
     
     intro.write("""
 
-    Of course data from one stock in one day is not enough to determine if it holds at other times.
-    
-    Could M1's trading time change affect clients costs? 
-    
     Unfortunately unlike commissions or expense ratios, the bid-ask 
-    spread costs are less transparent. Brokers that hold assets must report how much they receive for
-    forwarding trades to market makers, but since M1 [doesn't hold](https://m1-production-agreements.s3.amazonaws.com/documents/M1+Rules+606+%26+607+Disclosures.pdf)
-    the assets themselves, they don't 
-    provide regular reports of their revenue from order flow. If when the trading window changed there was a 
-    corresponding increase in payment from order flow, that would support the idea that customers
-    are incurring higher spreads.
+    spread costs are less transparent. The quoted prices on the exchange are not the same as the prices the market makers give.
+    While most brokers must report how much they receive in payment from market makers, 
+    they do not have to publish price improvement data, which is what more directly impacts investors.
     
-    M1, unlike other [brokers](https://www.schwab.com/execution-quality/price-improvement), does 
-    not show clients how much better than the bid-ask spread their trade executed for, leading to even less transparancy when executing trades.
+    M1 is also less transparent than many other brokers. Since M1 [doesn't hold](https://m1-production-agreements.s3.amazonaws.com/documents/M1+Rules+606+%26+607+Disclosures.pdf)
+    investors' assets, they are not required to, nor do they voluntarily, provide regular reports of their payment from order flow. They do provide payment for order flow data for an individual trader's trades upon request, but this does not allow comparison on an aggregate basis. In addition, M1, unlike [other](https://www.fidelity.com/trading/execution-quality/overview) [brokers](https://www.schwab.com/execution-quality/price-improvement), does not show clients how much better than the quoted bid-ask spread their trade executed for, reducing transparancy when executing trades. 
     
-    Without any M1 specific data, I scraped bid and ask prices for 41 ETFs between July 1 2019 and Feb 19 2021. Click the results tab to see how much the change in trade time affected bid-ask spreads for a few of Vanguard's ETFs. 
-    Click on the 'Data selection' tab to change ETFs, dates, and trading window timing. If you want to dig 
+    Without adequate M1 specific data, I scraped bid and ask prices for 41 ETFs between July 1 2019 and Feb 19 2021. Click the results tab to see how much the change in trade time affected bid-ask spreads for a few of Vanguard's ETFs and how this compares to the expense ratio, another significant fee when investing in ETFs.
+    Then check out the 'Data selection' tab to view different ETFs, dates, and trading window timings. If you want to dig 
     deeper than this analysis, read the methods section, download the [repository](https://github.com/goldmanm/bid-ask-visualization), and start playing with your own data.
 
-    Instead of presenting bid and ask prices, the results section uses quoted spreads, which represent the maximum fraction that a market maker can take when they exchange a share.
-    You can think of this amount as a percentage fee for buying and selling a share.""")
+    """)
 
 def write_methods():
     methods.write(r"""
@@ -616,14 +604,14 @@ def write_methods():
     assuming the actual value of the stock is halfway between the two. 
     (maximum calculated by $\frac{10,000\times 0.002}{2} + \frac{10,000\times 0.001}{2}$). 
 
-    Bid and ask price data originated from full-volume historical quotes obtained from polygon.io.
+    Bid and ask price data originated from full-volume historical quotes obtained from [polygon.io](https://polygon.io/).
     For each data point, the quoted bid-ask spread was calculated by subtracting the bid from 
-    the ask and dividing by the midpoint of the two.  The bid, ask, and quoted spreads were 
+    the ask and dividing by the midpoint of the two.  The quoted spreads were 
     consolidated into 5 second, time-weighted averages and stored locally. Daily volume data 
     also comes from [polygon.io](https://polygon.io/).
 
     When plotting, times were further consolidated into 1 minute chunks. The points on the graph 
-    represent the midpoint of the averaged region.
+    are shown at the midpoint of the averaged region (e.g. data from 9:30:00 to 9:31:00 would be shown at 9:30:30).
     
     The quoted spread for a particular trading window is the average of the values within that 
     window. The default trading window used in this analysis ends 15 minutes after the start 
@@ -638,47 +626,44 @@ def write_methods():
     3. DRIV on 2020-03-17
     4. SPCX on 2020-12-16
     
-    If anyone is curious about these specific days, they can download the [repository](https://github.com/goldmanm/bid-ask-visualization), check out the data, and remove the lines in app.py which exclude these days.
+    If anyone is curious about these specific days, they can download the [repository](https://github.com/goldmanm/bid-ask-visualization), check out the data, and remove the lines in `app.py` which exclude these days.
     
     Data about market cap and expense ratio were obtained after trading hours on 24 Feb. 2021 from Yahoo Finance.
     
     
-     ETFs were chosen 
+    ETFs were chosen
     because either they are commonly traded, they screen for Environmental, Social, or Governance 
     (ESG) qualities, or they cover specific sectors. ETFs were not added nor removed based on expected change in price ratio."
     
     """)
 def write_conclusion():
     conclusion.write("""
-                     For the vast majority of ETFs evaluated here, trading at the market opening window had substantially wider quoted spreads. 
-                     This is true for both ETF behemoths (e.g. VTI) and newcomers (e.g. VCEB) across a wide range of sectors. 
-                     Some of the additional spread  at market opening can be taken by the market makers, leading traders to pay a higher cost.  
+For the vast majority of ETFs evaluated here, trading at the market opening window had substantially wider quoted spreads. 
+This is true for both ETF behemoths (e.g. VTI) and newcomers (e.g. VCEB) across a wide range of sectors. 
+Some of the additional spread  at market opening can be taken by the market makers, leading traders to pay a higher cost. Investors should take note of this cost when deciding when to execute trades. 
                      
-M1 finance's move of the trading window to a time where the customers may be paying more, does not seem in the customer's interest (which I believe should have been disclosed when [announcing](https://www.m1finance.com/blog/trade-window-change/) the change), 
+M1 finance moved the trading window to a time where the customers may be paying more, and this does not seem to be in the customer's interest (which I believe should have been disclosed when [announcing](https://www.m1finance.com/blog/trade-window-change/) the change), 
 and appears to go against the spirit of FINRA's [best execution](https://www.finra.org/rules-guidance/rulebooks/finra-rules/5310) requirement,
 though it may follow the letter of the requirement.
                      
 If M1's revenue from order flow is proportional to bid-ask spreads, it also seems like there could be an unmitigated conflict of interest at play 
-when M1 decided to move its trading window. This is slightly different than the more common conflict of interest in choosing a market maker, 
-though they both might lead to higher brokerage profits by increasing hidden fees for investors.
-
-Without full information, it is impossible to evaluate how much M1's revenue increased from changing the trading window. 
-When I reached out, M1 did inform me about which market makers my trades were directed and how much they received from payment for order flow
+when M1 decided to move its trading window. Without full information, it is impossible to evaluate how much M1's revenue increased from changing the trading window. 
+When I reached out to M1 referencing their [607 disclosure document](https://m1-production-agreements.s3.amazonaws.com/documents/M1+Rules+606+%26+607+Disclosures.pdf), M1 told me how much they receive in payment for order flow for my trades
 over the past 6 months. They made 15.5 cents per hundred shares on my trades (which involved buying eight distinct ETFs). 
-This is typically within the average payment that Apex Clearing (which is where M1 holds the shares) [receives](https://public.s3.com/rule606/apex/), 
-significantly lower than [Robinhood](https://cdn.robinhood.com/assets/robinhood/legal/RHS%20SEC%20Rule%20606a%20and%20607%20Disclosure%20Report%20Q4%202020.pdf), and
+This is typically within the average payments that Apex Clearing (which is where M1 holds the shares) [receives](https://public.s3.com/rule606/apex/), and is
+significantly lower than [Robinhood](https://cdn.robinhood.com/assets/robinhood/legal/RHS%20SEC%20Rule%20606a%20and%20607%20Disclosure%20Report%20Q4%202020.pdf)  and
 higher than [TD Ameritrade](https://www.tdameritrade.com/retail-en_us/resources/606_disclosure/tdainc-TDA2055-q3-2020.pdf) and [Schwab](https://content.schwab.com/drupal_dependencies/psr/606/2020-Q4-Schwab-Quarterly-Report.pdf).
-The shares bought in my M1 account likely differ from those of the average non-S&P 500 equities, making a definitive conclusion difficult.
+This comparison isn't perfect given that my eight ETFs are not representative of all the non-S&P 500 equities (which is the lumped category which companies report payment for order flow from). Given the lack of data, it is unclear whether M1 actually increased revenue from moving the trading time. 
 
 Like any project, this analysis leaves many unanswered questions:
 
 1. What other data sources and reasoning led M1 to move the market window? 
-2. Does the price improvement that market makers offer change between the two windows, leading the quoted spreads analysis to be less accurate? 
-3. Did the changed window timing increase M1's revenue from market makers?
+2. How does the price improvement that market makers offer change between the two windows? 
+3. Did the changed window timing increase M1's revenue for order flow?
 4. If there is a larger effective spread at the start of the trade day, why did M1 not inform investors of the potential increase in spread when moving to the new trading window?                     
-                     
+
 Time may help answer some of these questions, though it's unlikely to happen without significant transparency on M1's part.
-I truly hope that the change in timing was in the best interest of investors, but I have yet to see any evidence of that.
+I truly hope that the change in timing was in the best interest of investors, but I have yet to see much evidence of that.
     """)
 
 def write_disclaimer():
