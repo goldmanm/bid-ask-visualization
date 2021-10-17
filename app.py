@@ -652,7 +652,7 @@ When I reached out to M1 referencing their [607 disclosure document](https://m1-
 over the past 6 months. They made 15.5 cents per hundred shares on my trades (which involved buying eight distinct ETFs). 
 This is typically within the average payments that Apex Clearing (which is where M1 holds the shares) [receives](https://public.s3.com/rule606/apex/), and is
 significantly lower than [Robinhood](https://cdn.robinhood.com/assets/robinhood/legal/RHS%20SEC%20Rule%20606a%20and%20607%20Disclosure%20Report%20Q4%202020.pdf)  and
-higher than [TD Ameritrade](https://www.tdameritrade.com/retail-en_us/resources/606_disclosure/tdainc-TDA2055-q3-2020.pdf) and [Schwab](https://content.schwab.com/drupal_dependencies/psr/606/2020-Q4-Schwab-Quarterly-Report.pdf).
+higher than [TD Ameritrade](https://www.tdameritrade.com/content/dam/tda/retail/marketing/en/pdf/cftc/tdainc-TDA2055-q2-2021.pdf) and [Schwab](https://content.schwab.com/drupal_dependencies/psr/606/2020-Q4-Schwab-Quarterly-Report.pdf).
 This comparison isn't perfect given that my eight ETFs are not representative of all the non-S&P 500 equities (which is the lumped category which companies report payment for order flow from). Given the lack of data, it is unclear whether M1 actually increased revenue from moving the trading time. 
 
 Like any project, this analysis leaves many unanswered questions:
